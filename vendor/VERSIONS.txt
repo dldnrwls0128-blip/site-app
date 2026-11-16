@@ -1,0 +1,5 @@
+pdfjs-dist 6.5.438  (pdf.min.mjs, pdf.worker.min.mjs, cmaps/, wasm/)
+jspdf 4.2.1         (jspdf.umd.min.js)
+xlsx 0.18.5         (xlsx.mjs)  — SheetJS community
+jszip 3.10.2        (jszip.min.js)
+Noto Sans KR Regular — instantiated from Google Fonts variable font (OFL), then subset (Hangul + Latin + punctuation)

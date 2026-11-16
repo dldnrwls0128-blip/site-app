@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#1a2744" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="현장관리" />
+  <title>현장관리</title>
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="icon" href="./icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="./icons/icon-192.png" />
+  <link rel="stylesheet" href="./css/app.css" />
+</head>
+<body>
+  <div id="app">
+    <header class="app-header">
+      <button type="button" id="btn-back" hidden aria-label="뒤로">‹</button>
+      <h1 id="header-title">현장관리</h1>
+      <button type="button" id="btn-back-spacer" hidden aria-hidden="true">‹</button>
+    </header>
+    <main id="view"></main>
+    <nav class="tab-bar" aria-label="하단 메뉴">
+      <a class="tab-item active" data-tab="home" id="tab-home" href="#/home">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 11l8-7 8 7v9H4v-9z"/><path d="M10 20v-6h4v6"/></svg>
+        홈
+      </a>
+      <a class="tab-item" data-tab="browse" id="tab-browse" href="#/browse">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4-4"/></svg>
+        조회
+      </a>
+      <a class="tab-item" data-tab="drawings" id="tab-drawings" href="#/drawings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3h9l5 5v13H6V3z"/><path d="M15 3v5h5"/></svg>
+        도면
+      </a>
+      <a class="tab-item" data-tab="settings" id="tab-settings" href="#/settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a7.7 7.7 0 0 0 .1-6l-2.1-.3a6 6 0 0 0-1.3-2.2l.9-1.9-2.5-1.5-1.2 1.8a6 6 0 0 0-2.6 0L9.5 3.1 7 4.6l.9 1.9A6 6 0 0 0 6.6 8.7L4.5 9a7.7 7.7 0 0 0 .1 6l2.1.3a6 6 0 0 0 1.3 2.2l-.9 1.9 2.5 1.5 1.2-1.8a6 6 0 0 0 2.6 0l1.2 1.8 2.5-1.5-.9-1.9a6 6 0 0 0 1.3-2.2l2.1-.3z"/></svg>
+        설정
+      </a>
+    </nav>
+  </div>
+  <div id="toast" role="status"></div>
+  <input id="input-photo" type="file" accept="image/*" capture="environment" />
+  <input id="input-video" type="file" accept="video/*" capture="environment" />
+  <input id="input-album" type="file" accept="image/*,video/*" />
+  <input id="input-pdf" type="file" accept="application/pdf,.pdf" />
+  <input id="input-backup" type="file" accept="application/zip,.zip" />
+  <input id="input-inspect-photo" type="file" accept="image/*" multiple />
+  <input id="input-item-camera" type="file" accept="image/*" capture="environment" />
+  <input id="input-templates" type="file" accept="application/json,.json" />
+  <script src="./vendor/jszip/jszip.min.js"></script>
+  <script src="./vendor/jspdf/jspdf.umd.min.js"></script>
+  <script type="module" src="./js/app.js"></script>
+</body>
+</html>
