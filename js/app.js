@@ -306,17 +306,67 @@ function openLocPicker() {
       tradeId: state.ctx.tradeId || null,
     },
   };
+  // 안드로이드 뒤로가기(하드웨어/제스처)가 앱을 닫지 않고 선택기를 닫도록 히스토리 항목을 하나 쌓는다.
+  try {
+    history.pushState({ ...(history.state || {}), sheet: "loc-picker" }, "", location.href);
+    state.locPicker.histPushed = true;
+  } catch {}
   render();
 }
 
+/** 선택기를 닫는다. 쌓아 둔 히스토리 항목이 있으면 history.back()으로 걷어 낸다. */
 function closeLocPicker() {
+  const pushed = state.locPicker?.histPushed && history.state?.sheet === "loc-picker";
   state.locPicker = null;
   render();
+  if (pushed) {
+    state.ignoreNextPop = true;
+    history.back();
+  }
+}
+
+const PICKER_ORDER = ["dong", "floor", "unit", "trade"];
+
+/** ← 뒤로: 이전 단계로, 첫 단계(동)에서는 선택기를 닫는다. true면 닫힘. */
+function pickerStepBack() {
+  const p = state.locPicker;
+  if (!p) return true;
+  const i = PICKER_ORDER.indexOf(p.step);
+  if (i <= 0) {
+    closeLocPicker();
+    return true;
+  }
+  p.step = PICKER_ORDER[i - 1];
+  render();
+  return false;
+}
+
+/** 확인 버튼을 누를 수 없는 이유. 누를 수 있으면 "". */
+function pickerBlockReason(p) {
+  if (!p) return "";
+  const d = p.draft;
+  if (!d.dongId) return "동을 선택하세요.";
+  if (!d.floorId) {
+    const floors = pickerFloors(state.data.locations, d.dongId);
+    if (!floors.length) return "이 동에는 층·구역이 없습니다. 설정 › 위치 구조 생성에서 추가하세요.";
+    return "층을 선택하세요.";
+  }
+  return "";
 }
 
 function completeLocPicker() {
-  const d = state.locPicker?.draft;
-  if (!d?.dongId || !d?.floorId) return toast("동과 층을 선택하세요.");
+  const p = state.locPicker;
+  const d = p?.draft;
+  const why = pickerBlockReason(p);
+  if (!d || why) {
+    if (why) {
+      toast(why);
+      if (p && !d.dongId) p.step = "dong";
+      else if (p && !d.floorId) p.step = "floor";
+      render();
+    }
+    return;
+  }
   setCtx({
     dongId: d.dongId,
     floorId: d.floorId,
@@ -374,7 +424,8 @@ function locPickerHtml() {
     body = `<div class="picker-grid">${floors.map((f) => {
       const lab = isCommonDong(locations.find((l) => l.id === p.draft.dongId)) ? formatCommonLevel(f) : f.name;
       return btn(lab, p.draft.floorId === f.id, `data-pick="floor" data-id="${esc(f.id)}"`);
-    }).join("")}</div>`;
+    }).join("")}</div>${floors.length ? "" : `<p class="empty">이 동에는 등록된 층·구역이 없습니다.</p>
+      <button type="button" class="btn btn-lg" id="btn-picker-to-settings">설정에서 층·구역 추가</button>`}`;
   } else if (p.step === "unit") {
     const unitBtns = units.map((u) => btn(u.name, p.draft.unitId === u.id, `data-pick="unit" data-id="${esc(u.id)}"`)).join("")
       + btn("선택 안 함", !p.draft.unitId, `data-pick="unit" data-id=""`);
@@ -394,15 +445,22 @@ function locPickerHtml() {
   const dongObj = locations.find((l) => l.id === p.draft.dongId);
   const floorTitle = isCommonDong(dongObj) ? "공용 구역·층을 고르세요" : "층을 고르세요";
   const titles = { dong: "동을 고르세요", floor: floorTitle, unit: "호수·부위를 고르세요 (선택)", trade: "공종을 고르세요" };
+  const why = pickerBlockReason(p);
+  const summary = why ? "" : `선택: ${compactLocationLine(locations, trades, { ...p.draft, tradeId: p.draft.tradeId || state.ctx.tradeId })}`;
   return `
     <div class="loc-picker" id="loc-picker" role="dialog" aria-modal="true" aria-labelledby="loc-picker-title">
       <header class="picker-head">
+        <button type="button" class="picker-back" id="btn-picker-back" aria-label="뒤로">← 뒤로</button>
         <h2 id="loc-picker-title">위치 선택</h2>
+        <button type="button" class="picker-close" id="btn-picker-close" aria-label="닫기">✕</button>
       </header>
       <nav class="picker-steps">${steps.map((st) => `<button type="button" class="picker-step${p.step === st.id ? " on" : ""}" data-picker-step="${st.id}">${esc(st.lab)}</button>`).join("")}</nav>
       <p class="picker-lead">${esc(titles[p.step] || "")}</p>
       <div class="picker-body">${body}</div>
-      <button type="button" class="btn btn-primary btn-lg picker-done" id="btn-picker-done">완료</button>
+      <footer class="picker-foot">
+        <p class="picker-why${why ? "" : " is-ok"}" id="picker-why" role="status">${esc(why || summary)}</p>
+        <button type="button" class="btn btn-primary btn-lg picker-done${why ? " is-blocked" : ""}" id="btn-picker-done" aria-describedby="picker-why">확인</button>
+      </footer>
     </div>`;
 }
 
@@ -1868,6 +1926,24 @@ async function onClick(e) {
     shiftFloor(1);
     return;
   }
+  if (t.id === "btn-picker-back") {
+    e.preventDefault();
+    pickerStepBack();
+    return;
+  }
+  if (t.id === "btn-picker-close") {
+    e.preventDefault();
+    closeLocPicker();
+    return;
+  }
+  if (t.id === "btn-picker-to-settings") {
+    e.preventDefault();
+    const pushed = state.locPicker?.histPushed && history.state?.sheet === "loc-picker";
+    if (pushed) state.afterPickerPop = "settings";
+    closeLocPicker();
+    if (!pushed) go("settings");
+    return;
+  }
   if (t.id === "btn-picker-done") {
     e.preventDefault();
     completeLocPicker();
@@ -1910,7 +1986,8 @@ async function onClick(e) {
     return;
   }
   if (t.id === "btn-back") {
-    history.back();
+    if (history.state?.appDepth > 0 || history.length > 1) history.back();
+    else go("home");
     return;
   }
   if (t.dataset.filter) {
@@ -2157,6 +2234,18 @@ async function wipeAllData() {
   location.reload();
 }
 
+/** 하위 화면으로 바로 열렸을 때 아래에 홈 항목을 깔아, 뒤로가기가 앱을 닫지 않고 홈으로 오게 한다. */
+function ensureHomeBase() {
+  const raw = (location.hash || "#/home").replace(/^#\/?/, "");
+  const tabs = new Set(["", "home", "browse", "drawings", "settings"]);
+  if (tabs.has(raw)) return;
+  try {
+    const target = location.hash;
+    history.replaceState({ appDepth: 0 }, "", "#/home");
+    history.pushState({ appDepth: 1 }, "", target);
+  } catch {}
+}
+
 async function init() {
   const seeded = await db.seedIfEmpty();
   const trades = await db.getAll("trades");
@@ -2172,6 +2261,7 @@ async function init() {
       part: "",
     });
   }
+  ensureHomeBase();
   parseHash();
   rememberCurrentLocation();
   render();
@@ -2243,6 +2333,28 @@ document.addEventListener("click", (e) => {
 document.addEventListener("submit", (e) => {
   const p = onSubmit(e);
   if (p && p.catch) p.catch((err) => { console.error(err); toast("저장에 실패했습니다."); });
+});
+window.addEventListener("popstate", () => {
+  if (state.ignoreNextPop) {
+    state.ignoreNextPop = false;
+    const next = state.afterPickerPop;
+    state.afterPickerPop = null;
+    if (next) go(next);
+    return;
+  }
+  if (state.locPicker?.open) {
+    // 하드웨어/제스처 뒤로: 이전 단계로. 첫 단계면 닫기(항목은 이미 빠졌으므로 back 하지 않음).
+    const p = state.locPicker;
+    const i = PICKER_ORDER.indexOf(p.step);
+    if (i <= 0) {
+      state.locPicker = null;
+      render();
+    } else {
+      p.step = PICKER_ORDER[i - 1];
+      try { history.pushState({ ...(history.state || {}), sheet: "loc-picker" }, "", location.href); } catch {}
+      render();
+    }
+  }
 });
 window.addEventListener("hashchange", () => {
   const prev = state.view;

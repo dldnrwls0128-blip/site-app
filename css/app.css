@@ -316,7 +316,7 @@ textarea { min-height: 120px; resize: vertical; line-height: 1.45; }
   font-weight: 600;
   opacity: 0;
   pointer-events: none;
-  z-index: 40;
+  z-index: 60; /* 위치 선택기(50) 위에도 보이도록 */
   max-width: calc(100% - 32px);
   transition: opacity .2s, transform .2s;
 }
@@ -463,6 +463,8 @@ body.picker-open { overflow: hidden; }
 .loc-picker {
   position: fixed;
   inset: 0;
+  height: 100dvh;
+  touch-action: manipulation;
   z-index: 50;
   background: var(--bg);
   display: flex;
@@ -476,13 +478,42 @@ body.picker-open { overflow: hidden; }
   min-height: 56px;
   padding: 8px 0;
 }
-.picker-head h2 { flex: 1; margin: 0; font-size: 18px; }
+.picker-head h2 { flex: 1; margin: 0; font-size: 18px; text-align: center; }
+.picker-back,
+.picker-close {
+  min-height: 48px;
+  min-width: 48px;
+  padding: 0 12px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--navy);
+  font-size: 16px;
+  font-weight: 800;
+}
+.picker-close { font-size: 18px; padding: 0; }
+.picker-foot {
+  position: sticky;
+  bottom: 0;
+  flex: 0 0 auto;
+  background: var(--bg);
+  padding-top: 6px;
+  z-index: 1;
+}
+.picker-why {
+  margin: 0 0 6px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--red);
+  text-align: center;
+}
+.picker-why.is-ok { color: var(--muted); font-weight: 600; }
 .picker-done {
   width: 100%;
   min-height: var(--tap);
   flex: 0 0 auto;
-  margin-top: 8px;
 }
+.picker-done.is-blocked { background: #c8c8c8; border-color: #c8c8c8; color: #4a4a4a; }
 .picker-steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 10px; }
 .picker-step {
   min-height: 44px;
